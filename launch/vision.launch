@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+      <node name="static_transform_publisher"	pkg="tf" type="static_transform_publisher" 
+            args="0 0 0 0 0 0 /map /world 100"/>
+
+	<node name="transformer_node" pkg="robot_vision" type="point_cloud_tf"	
+            respawn="false" output="screen"/>
+  
+      <node name="preprocessing_node" pkg="robot_vision" type="point_cloud_preprocessing"	
+            respawn="false" output="screen"/>
+
+</launch>

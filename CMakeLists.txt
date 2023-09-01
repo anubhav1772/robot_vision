@@ -79,13 +79,19 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(downsampling src/downsampling.cpp)
+add_executable(point_cloud_preprocessing src/preprocessing.cpp)
+add_executable(point_cloud_tf src/cloud_transformer.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(downsampling ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(point_cloud_preprocessing ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(point_cloud_tf ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(downsampling ${catkin_LIBRARIES})
+target_link_libraries(point_cloud_preprocessing ${catkin_LIBRARIES})
+target_link_libraries(point_cloud_tf ${catkin_LIBRARIES})
 
 ## https://stackoverflow.com/questions/30535933/eigen-gcc-5-class-stdbinder2nd-is-deprecated
 ## supress deprecation warnings
