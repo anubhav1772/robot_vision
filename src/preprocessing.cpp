@@ -15,10 +15,12 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/filters/extract_indices.h>
-#include <pcl/kdtree/kdtree.h>
+#include <pcl/search/kdtree.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+
+// EuclideanClusterExtraction
 #include <pcl/segmentation/extract_clusters.h>
 #include <sensor_msgs/PointCloud2.h>
 
@@ -41,7 +43,8 @@ class Preprocess
             pcl_cloud_table_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_table", 1);
             pcl_cloud_objects_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_objects", 1);
 
-            // pcl_clusters_pub = nh_.advertise<sensor_stick::SegmentedClustersArray>("/pcl_clusters", 1);
+            //pcl_clusters_pub = nh_.advertise<sensor_stick::SegmentedClustersArray>("/pcl_clusters", 1);
+            pcl_clusters_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_clusters", 1);
         }
 
     private:
@@ -58,7 +61,7 @@ class Preprocess
         ros::Publisher pcl_cloud_table_pub;
         ros::Publisher pcl_cloud_objects_pub;
 
-        // ros::Publisher pcl_clusters_pub;
+        ros::Publisher pcl_clusters_pub;
 
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
         {
@@ -78,6 +81,8 @@ class Preprocess
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_cloud(p_cloud);
             pcl::fromROSMsg(cloud_msg, *p_cloud);
 
+            pcl::PointCloud<pcl::PointXYZRGB> *cloud_cluster = new pcl::PointCloud<pcl::PointXYZRGB>();
+
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_downsampled_cloud(downsampled);
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_inliers_cloud(inliers_cloud);
             // const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_outliers_cloud(outliers_cloud);
@@ -86,6 +91,7 @@ class Preprocess
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_passthroughz_cloud(passthrough_z);
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_table_cloud(cloud_table);
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_objects_cloud(cloud_objects);
+            const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_cloud_cluster(cloud_cluster);
 
             ROS_INFO("---------------------------------");
             ROS_INFO("Point Cloud Cluster Stats:");
@@ -175,6 +181,31 @@ class Preprocess
             pass_filter.setNegative(false);
             pass_filter.filter(*passthrough_z);
 
+            pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+            tree->setInputCloud(sp_pcl_passthroughz_cloud);
+
+            std::vector<pcl::PointIndices> cluster_indices;
+            pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
+            ec.setClusterTolerance(0.02); //2cm
+            ec.setMinClusterSize(100); 
+            ec.setMaxClusterSize(25000);
+            ec.setSearchMethod(tree);
+            ec.setInputCloud(sp_pcl_passthroughz_cloud);
+            ec.extract(cluster_indices);
+
+            int j=0;
+            for(const auto& cluster : cluster_indices)
+            {
+                for(const auto& idx : cluster.indices)
+                {
+                    cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
+                    cloud_cluster->width = cloud_cluster->size();
+                    cloud_cluster->height = 1;
+                    cloud_cluster->is_dense = true;
+                }
+                j++;
+            }
+
             sensor_msgs::PointCloud2 pcl_downsampled;
             pcl::toROSMsg(*downsampled, pcl_downsampled);
             pcl_downsampled_pub.publish(pcl_downsampled);
@@ -207,13 +238,10 @@ class Preprocess
             pcl::toROSMsg(*passthrough_z, pcl_passthroughz);
             pcl_passthroughz_pub.publish(pcl_passthroughz);
 
-            // ROS_INFO("publishing custers...");
-            // pcl_clusters_pub.publish(cloudClusters);
-            // ROS_INFO("published custers...");
+            sensor_msgs::PointCloud2 pcl_cloud_clusters;
+            pcl::toROSMsg(*cloud_cluster, pcl_cloud_clusters);
+            pcl_clusters_pub.publish(pcl_cloud_clusters);
         }
-
-
-
 };  // Preprocess
 
 int main(int argc, char **argv)
