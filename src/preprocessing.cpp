@@ -81,7 +81,7 @@ class Preprocess
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_cloud(p_cloud);
             pcl::fromROSMsg(cloud_msg, *p_cloud);
 
-            pcl::PointCloud<pcl::PointXYZRGB> *cloud_cluster = new pcl::PointCloud<pcl::PointXYZRGB>();
+            pcl::PointCloud<pcl::PointXYZRGB> *cloud_clusters = new pcl::PointCloud<pcl::PointXYZRGB>();
 
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_downsampled_cloud(downsampled);
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_inliers_cloud(inliers_cloud);
@@ -91,7 +91,7 @@ class Preprocess
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_passthroughz_cloud(passthrough_z);
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_table_cloud(cloud_table);
             const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_objects_cloud(cloud_objects);
-            const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_cloud_cluster(cloud_cluster);
+            const boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > sp_pcl_cloud_clusters(cloud_clusters);
 
             ROS_INFO("---------------------------------");
             ROS_INFO("Point Cloud Cluster Stats:");
@@ -100,8 +100,6 @@ class Preprocess
             ROS_INFO("Total data points : %d", sp_pcl_cloud->height*sp_pcl_cloud->width);
             // ROS_INFO("",*p_cloud);
             ROS_INFO("---------------------------------");
-            
-            ROS_INFO("Starting Preprocessing steps...");
 
             ROS_INFO("Starting Voxel Grid Downsampling...");
             pcl::VoxelGrid<pcl::PointXYZRGB> vox;
@@ -133,14 +131,16 @@ class Preprocess
             // filter along x-axis: left/right 
             pass_filter.setInputCloud(sp_pcl_inliers_cloud);
             pass_filter.setFilterFieldName("x");
-            pass_filter.setFilterLimits(-0.8, 0.0);
+            pass_filter.setFilterLimits(-0.5, 0.5);
             pass_filter.setNegative(false);
             pass_filter.filter(*passthrough_x);
 
             // filter along y-axis: up/down 
+            // RANSAC algorithm doesnot remove the table edge, as it's not planar with table surface.
+            // removing all points below the table height should get rid of the edge 
             pass_filter.setInputCloud(sp_pcl_passthroughx_cloud);
             pass_filter.setFilterFieldName("y");
-            pass_filter.setFilterLimits(0.1, 0.5);
+            pass_filter.setFilterLimits(-5, 0.2); // second parameter filters pointcloud from front
             pass_filter.setNegative(false);
             pass_filter.filter(*passthrough_y);
 
@@ -172,23 +172,24 @@ class Preprocess
             extract.setNegative(true);
             extract.filter(*cloud_objects);
 
-            // RANSAC algorithm hasn't removed the table edge, as it's not planar with table surface.
             // filter along z-axis: into/outside of the screen
-            // removing all points below the table height should get rid of the edge
             pass_filter.setInputCloud(sp_pcl_objects_cloud);
+            //pass_filter.setInputCloud(sp_pcl_passthroughy_cloud);
             pass_filter.setFilterFieldName("z");
-            pass_filter.setFilterLimits((sp_pcl_passthroughy_cloud->points[inliers->indices[0]].z + 0.01), (sp_pcl_passthroughy_cloud->points[inliers->indices[0]].z + 1));
+            pass_filter.setFilterLimits(-2.0,1.3);
+            // pass_filter.setFilterLimits((sp_pcl_passthroughy_cloud->points[inliers->indices[0]].z + 0.01), (sp_pcl_passthroughy_cloud->points[inliers->indices[0]].z + 1.3));
             pass_filter.setNegative(false);
             pass_filter.filter(*passthrough_z);
 
+            
             pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
             tree->setInputCloud(sp_pcl_passthroughz_cloud);
 
             std::vector<pcl::PointIndices> cluster_indices;
             pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
             ec.setClusterTolerance(0.02); //2cm
-            ec.setMinClusterSize(100); 
-            ec.setMaxClusterSize(25000);
+            ec.setMinClusterSize(10); 
+            ec.setMaxClusterSize(2500);
             ec.setSearchMethod(tree);
             ec.setInputCloud(sp_pcl_passthroughz_cloud);
             ec.extract(cluster_indices);
@@ -196,15 +197,31 @@ class Preprocess
             int j=0;
             for(const auto& cluster : cluster_indices)
             {
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
                 for(const auto& idx : cluster.indices)
                 {
                     cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
-                    cloud_cluster->width = cloud_cluster->size();
-                    cloud_cluster->height = 1;
-                    cloud_cluster->is_dense = true;
                 }
+                cloud_cluster->width = cloud_cluster->size();
+                cloud_cluster->height = 1;
+                cloud_cluster->is_dense = true;
+
+                //pcl::PCLPointCloud2::concatenate(cloud_clusters, cloud_cluster);
+                pcl::copyPointCloud(*cloud_cluster, *cloud_clusters);
                 j++;
             }
+
+            //cloud_clusters->is_bigendian = false;
+            cloud_clusters->width = cloud_clusters->size();
+            cloud_clusters->height = 1;
+            //cloud_clusters->point_step = 32;
+            //cloud_clusters->row_step = cloud_clusters->point_step*cloud_clusters->width*cloud_clusters->height;
+            cloud_clusters->is_dense = true;
+            (cloud_clusters->header).frame_id = "camera_rgb_optical_frame";
+
+
+            ROS_INFO("Total $$$#################################$$$$ of clusters : %d", j);
+            
 
             sensor_msgs::PointCloud2 pcl_downsampled;
             pcl::toROSMsg(*downsampled, pcl_downsampled);
@@ -239,8 +256,9 @@ class Preprocess
             pcl_passthroughz_pub.publish(pcl_passthroughz);
 
             sensor_msgs::PointCloud2 pcl_cloud_clusters;
-            pcl::toROSMsg(*cloud_cluster, pcl_cloud_clusters);
+            pcl::toROSMsg(*cloud_clusters, pcl_cloud_clusters);
             pcl_clusters_pub.publish(pcl_cloud_clusters);
+        
         }
 };  // Preprocess
 
