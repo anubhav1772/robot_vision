@@ -200,7 +200,13 @@ class Preprocess
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
                 for(const auto& idx : cluster.indices)
                 {
-                    cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
+                    pcl::PointXYZRGB temp = (*sp_pcl_passthroughz_cloud)[idx];
+                    ROS_INFO("#####x point %f", temp.x);
+                    uint8_t r = 255, g = 0, b = 0;
+                    uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+                    temp.rgb = *reinterpret_cast<float*>(&rgb);
+                    cloud_cluster->push_back(temp);
+                    //cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
                 }
                 cloud_cluster->width = cloud_cluster->size();
                 cloud_cluster->height = 1;
