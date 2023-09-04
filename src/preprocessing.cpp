@@ -188,7 +188,7 @@ class Preprocess
             std::vector<pcl::PointIndices> cluster_indices;
             pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
             ec.setClusterTolerance(0.02); //2cm
-            ec.setMinClusterSize(10); 
+            ec.setMinClusterSize(30); 
             ec.setMaxClusterSize(2500);
             ec.setSearchMethod(tree);
             ec.setInputCloud(sp_pcl_passthroughz_cloud);
@@ -206,17 +206,19 @@ class Preprocess
                 cloud_cluster->height = 1;
                 cloud_cluster->is_dense = true;
 
-                //pcl::PCLPointCloud2::concatenate(cloud_clusters, cloud_cluster);
-                pcl::copyPointCloud(*cloud_cluster, *cloud_clusters);
+                ROS_INFO_STREAM("Total data point in cluster " << (j+1) << "is " << cloud_cluster->size());
+                *cloud_clusters += *cloud_cluster;
+                //pcl::PCLPointCloud2::concatenate(*cloud_clusters, *cloud_cluster);
+                // pcl::copyPointCloud(*cloud_cluster, *cloud_clusters);
                 j++;
             }
 
             //cloud_clusters->is_bigendian = false;
-            cloud_clusters->width = cloud_clusters->size();
-            cloud_clusters->height = 1;
+            //cloud_clusters->width = cloud_clusters->size();
+            //cloud_clusters->height = 1;
             //cloud_clusters->point_step = 32;
             //cloud_clusters->row_step = cloud_clusters->point_step*cloud_clusters->width*cloud_clusters->height;
-            cloud_clusters->is_dense = true;
+            //cloud_clusters->is_dense = true;
             (cloud_clusters->header).frame_id = "camera_rgb_optical_frame";
 
 
