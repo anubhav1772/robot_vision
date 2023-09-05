@@ -24,7 +24,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include <time.h>
+#include <random>
 
 // color intensities [0, 255]
 const int inten[] = {0, 42, 128, 192, 255};
@@ -67,6 +67,8 @@ class Preprocess
         ros::Publisher pcl_cloud_objects_pub;
 
         ros::Publisher pcl_clusters_pub;
+
+        std::random_device dev;
 
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
         {
@@ -200,25 +202,31 @@ class Preprocess
             ec.extract(cluster_indices);
 
             int j=0;
+            std::mt19937 rng(dev());
+            // distribution in range [0, 4]
+            std::uniform_int_distribution<std::mt19937::result_type> dist5(0, 4); 
             for(const auto& cluster : cluster_indices)
             {
-                pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
-                // initialize the random seed
-                srand(time(NULL));
-                uint8_t r = inten[rand()%5], g = inten[rand()%5], b = inten[rand()%5];
+                uint8_t r = inten[dist5(rng)], g = inten[dist5(rng)], b = inten[dist5(rng)];
                 uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+                
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
+                // int k=0;
                 for(const auto& idx : cluster.indices)
                 {
                     pcl::PointXYZRGB temp = (*sp_pcl_passthroughz_cloud)[idx];
                     temp.rgb = *reinterpret_cast<float*>(&rgb);
                     cloud_cluster->push_back(temp);
                     //cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
+                    // ++k;
                 }
+
                 cloud_cluster->width = cloud_cluster->size();
                 cloud_cluster->height = 1;
                 cloud_cluster->is_dense = true;
 
                 ROS_INFO_STREAM("Total data points in cluster " << (j+1) << " is " << cloud_cluster->size());
+                // ROS_INFO_STREAM("value of k: " << k);
                 *cloud_clusters += *cloud_cluster;
                 //pcl::PCLPointCloud2::concatenate(*cloud_clusters, *cloud_cluster);
                 // pcl::copyPointCloud(*cloud_cluster, *cloud_clusters);
