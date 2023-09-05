@@ -24,6 +24,11 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <time.h>
+
+// color intensities [0, 255]
+const int inten[] = {0, 42, 128, 192, 255};
+
 class Preprocess
 {
     public:
@@ -198,12 +203,13 @@ class Preprocess
             for(const auto& cluster : cluster_indices)
             {
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
+                // initialize the random seed
+                srand(time(NULL));
+                uint8_t r = inten[rand()%5], g = inten[rand()%5], b = inten[rand()%5];
+                uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
                 for(const auto& idx : cluster.indices)
                 {
                     pcl::PointXYZRGB temp = (*sp_pcl_passthroughz_cloud)[idx];
-                    ROS_INFO("#####x point %f", temp.x);
-                    uint8_t r = 255, g = 0, b = 0;
-                    uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
                     temp.rgb = *reinterpret_cast<float*>(&rgb);
                     cloud_cluster->push_back(temp);
                     //cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
@@ -212,7 +218,7 @@ class Preprocess
                 cloud_cluster->height = 1;
                 cloud_cluster->is_dense = true;
 
-                ROS_INFO_STREAM("Total data point in cluster " << (j+1) << "is " << cloud_cluster->size());
+                ROS_INFO_STREAM("Total data points in cluster " << (j+1) << " is " << cloud_cluster->size());
                 *cloud_clusters += *cloud_cluster;
                 //pcl::PCLPointCloud2::concatenate(*cloud_clusters, *cloud_cluster);
                 // pcl::copyPointCloud(*cloud_cluster, *cloud_clusters);
