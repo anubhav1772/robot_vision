@@ -25,9 +25,10 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <random>
+#include <vector>
 
 // color intensities [0, 255]
-const int inten[] = {0, 42, 128, 192, 255};
+const int inten[] = {0, 42, 99, 128, 192, 255};
 
 class Preprocess
 {
@@ -50,6 +51,23 @@ class Preprocess
 
             //pcl_clusters_pub = nh_.advertise<sensor_stick::SegmentedClustersArray>("/pcl_clusters", 1);
             pcl_clusters_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_clusters", 1);
+        }
+
+        std::vector<uint32_t> generate_random_colors(int num_of_clusters)
+        {
+            std::vector<uint32_t> colors_list;
+            std::mt19937 rng(dev());
+            std::uniform_int_distribution<std::mt19937::result_type> dist5(0, 5);
+            uint8_t r, g, b;
+            uint32_t rgb;
+
+            for(int i=0; i<num_of_clusters; i++)
+            {
+                r = inten[dist5(rng)], g = inten[dist5(rng)], b = inten[dist5(rng)];
+                rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+                colors_list.push_back(rgb);
+            }
+            return colors_list;
         }
 
     private:
@@ -201,21 +219,23 @@ class Preprocess
             ec.setInputCloud(sp_pcl_passthroughz_cloud);
             ec.extract(cluster_indices);
 
+            std::vector<uint32_t> colors_list = generate_random_colors(cluster_indices.size());
+
             int j=0;
-            std::mt19937 rng(dev());
-            // distribution in range [0, 4]
-            std::uniform_int_distribution<std::mt19937::result_type> dist5(0, 4); 
+            //std::mt19937 rng(dev());
+            //distribution in range [0, 4]
+            //std::uniform_int_distribution<std::mt19937::result_type> dist5(0, 4); 
             for(const auto& cluster : cluster_indices)
             {
-                uint8_t r = inten[dist5(rng)], g = inten[dist5(rng)], b = inten[dist5(rng)];
-                uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+                //uint8_t r = inten[dist5(rng)], g = inten[dist5(rng)], b = inten[dist5(rng)];
+                //uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
                 
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
                 // int k=0;
                 for(const auto& idx : cluster.indices)
                 {
                     pcl::PointXYZRGB temp = (*sp_pcl_passthroughz_cloud)[idx];
-                    temp.rgb = *reinterpret_cast<float*>(&rgb);
+                    temp.rgb = *reinterpret_cast<float*>(&colors_list[j]);
                     cloud_cluster->push_back(temp);
                     //cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
                     // ++k;
