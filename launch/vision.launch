@@ -1,13 +1,57 @@
 <?xml version="1.0"?>
 <launch>
+      <!-- Export env variable so that gazebo finds our models -->
+      <env  name="GAZEBO_MODEL_PATH"
+            value="$(find robot_vision)/models:$(optenv GAZEBO_MODEL_PATH)" />
 
-      <node name="static_transform_publisher"	pkg="tf" type="static_transform_publisher" 
+      <!-- Launch file parameters -->
+      <arg  name="paused" default="false" />
+      <arg  name="debug" default="false" />
+      <arg  name="headless" default="false" />
+      <arg  name="gui" default="true" />
+      <arg  name="use_sim_time" default="true" />
+      <arg  name="limited" default="false" />
+      <!-- if cv is true, start preprocessing_node-->
+      <arg  name="cv" default="true" />
+	<!-- Unpause the simulation after loading the robot model -->
+  	<arg	name="unpause"	value="$(eval '' if arg('paused') else '-unpause')" />
+      <arg  name="rvizconfig" value="-d $(find robot_vision)/rviz/visualize.rviz" />
+
+      <!-- Possible worlds: [demo.world, pick_place.world, setup_1.world, setup_2.world, setup_3.world, factory.world]-->
+      <!--
+            demo.world - empty world with Kinect 3D Camera
+            setup_1.world - table with an object on it, Kinect 3D camera
+            setup_2.world - table with multiple objects on top of it, Kinect 3D camera
+            factory.world - factory setup with a chair hanging on a hook
+      -->
+      <arg name="world_name" default="$(find robot_vision)/worlds/setup_2.world" /> 
+
+      <!-- Start up simulated world -->
+      <include file="$(find gazebo_ros)/launch/empty_world.launch">
+            <arg name="world_name" value="$(arg world_name)" />
+            <arg name="use_sim_time" value="$(arg use_sim_time)" />
+            <arg name="paused" value="$(arg paused)" />
+            <arg name="debug" value="$(arg debug)" />
+            <arg name="gui" value="$(arg gui)" />
+            <arg name="headless" value="$(arg headless)" />
+      </include>
+
+	<!--<node name="transformer_node" pkg="robot_vision" type="point_cloud_tf"	
+            respawn="false" output="screen"/>-->
+
+      <node	name="static_transform_publisher_1"	pkg="tf" type="static_transform_publisher" 
             args="0 0 0 0 0 0 /map /world 100"/>
 
-	<node name="transformer_node" pkg="robot_vision" type="point_cloud_tf"	
-            respawn="false" output="screen"/>
-  
-      <node name="preprocessing_node" pkg="robot_vision" type="point_cloud_preprocessing"	
-            respawn="false" output="screen"/>
+      <node	name="kinect_static_transform_publisher"	pkg="tf" type="static_transform_publisher" 
+		args="1.488899 0.024878 1.8878 -3.107858 0.735965 0.038789 world camera_link 100"/> 
+	
+	<node	name="kinect_optical_transform"	pkg="tf" type="static_transform_publisher" 
+		args="0 0 0 -1.5707 0 -1.5707 camera_link camera_rgb_optical_frame 100"/>
 
+      <node name="rviz" pkg="rviz" type="rviz" respawn="false" args="$(arg rvizconfig)" output="screen" />
+  
+      <group if="$(arg cv)">
+            <node name="preprocessing_node" pkg="robot_vision" type="point_cloud_preprocessing"	
+                  respawn="false" output="screen"/>
+      </group>
 </launch>
