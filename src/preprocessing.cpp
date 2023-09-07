@@ -53,9 +53,8 @@ class Preprocess
             pcl_clusters_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_clusters", 1);
         }
 
-        std::vector<uint32_t> generate_random_colors(int num_of_clusters)
-        {
-            std::vector<uint32_t> colors_list;
+        void generate_random_colors(int num_of_clusters)
+        {         
             std::mt19937 rng(dev());
             std::uniform_int_distribution<std::mt19937::result_type> dist5(0, 5);
             uint8_t r, g, b;
@@ -67,11 +66,11 @@ class Preprocess
                 rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
                 colors_list.push_back(rgb);
             }
-            return colors_list;
         }
 
     private:
         ros::NodeHandle nh_;
+        std::vector<uint32_t> colors_list; 
         ros::Subscriber pcl_sub;
         ros::Publisher pcl_outlers_removed_pub;
         ros::Publisher pcl_downsampled_pub;
@@ -80,12 +79,9 @@ class Preprocess
         ros::Publisher pcl_passthroughx_pub;
         ros::Publisher pcl_passthroughy_pub;
         ros::Publisher pcl_passthroughz_pub;
-
         ros::Publisher pcl_cloud_table_pub;
         ros::Publisher pcl_cloud_objects_pub;
-
         ros::Publisher pcl_clusters_pub;
-
         std::random_device dev;
 
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
@@ -205,7 +201,6 @@ class Preprocess
             // pass_filter.setFilterLimits((sp_pcl_passthroughy_cloud->points[inliers->indices[0]].z + 0.01), (sp_pcl_passthroughy_cloud->points[inliers->indices[0]].z + 1.3));
             pass_filter.setNegative(false);
             pass_filter.filter(*passthrough_z);
-
             
             pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
             tree->setInputCloud(sp_pcl_passthroughz_cloud);
@@ -219,17 +214,20 @@ class Preprocess
             ec.setInputCloud(sp_pcl_passthroughz_cloud);
             ec.extract(cluster_indices);
 
-            std::vector<uint32_t> colors_list = generate_random_colors(cluster_indices.size());
+            // number of clusters
+            // if prev number of clusters is equal to current number of 
+            // clusters, then simply use the stored rgb from the colors_list. 
+            // Don't call generate_random_colors() again.
+            // if not equal, then call the function to create random colors.
+            int num_of_clusters = cluster_indices.size();
+            if(colors_list.size() != num_of_clusters)
+            {
+                generate_random_colors(num_of_clusters);
+            }
 
             int j=0;
-            //std::mt19937 rng(dev());
-            //distribution in range [0, 4]
-            //std::uniform_int_distribution<std::mt19937::result_type> dist5(0, 4); 
             for(const auto& cluster : cluster_indices)
             {
-                //uint8_t r = inten[dist5(rng)], g = inten[dist5(rng)], b = inten[dist5(rng)];
-                //uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-                
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
                 // int k=0;
                 for(const auto& idx : cluster.indices)
