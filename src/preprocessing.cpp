@@ -45,11 +45,8 @@ class Preprocess
             pcl_passthroughx_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_passthroughx", 1);
             pcl_passthroughy_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_passthroughy", 1);
             pcl_passthroughz_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_passthroughz", 1);
-
             pcl_cloud_table_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_table", 1);
             pcl_cloud_objects_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_objects", 1);
-
-            //pcl_clusters_pub = nh_.advertise<sensor_stick::SegmentedClustersArray>("/pcl_clusters", 1);
             pcl_clusters_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_clusters", 1);
         }
 
@@ -84,6 +81,8 @@ class Preprocess
         ros::Publisher pcl_clusters_pub;
         std::random_device dev;
 
+        //std::vector<> objects_centroid_list;
+
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
         {
             ROS_INFO("Point Cloud Cluster Received.");
@@ -95,7 +94,6 @@ class Preprocess
             pcl::PointCloud<pcl::PointXYZRGB> *passthrough_x = new pcl::PointCloud<pcl::PointXYZRGB>();
             pcl::PointCloud<pcl::PointXYZRGB> *passthrough_y = new pcl::PointCloud<pcl::PointXYZRGB>();
             pcl::PointCloud<pcl::PointXYZRGB> *passthrough_z = new pcl::PointCloud<pcl::PointXYZRGB>();
-
             pcl::PointCloud<pcl::PointXYZRGB> *cloud_objects = new pcl::PointCloud<pcl::PointXYZRGB>();
             pcl::PointCloud<pcl::PointXYZRGB> *cloud_table = new pcl::PointCloud<pcl::PointXYZRGB>();
 
@@ -230,20 +228,24 @@ class Preprocess
             {
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
                 // int k=0;
+                float x_sum=0.0, y_sum=0.0, z_sum=0.0;
                 for(const auto& idx : cluster.indices)
                 {
-                    pcl::PointXYZRGB temp = (*sp_pcl_passthroughz_cloud)[idx];
-                    temp.rgb = *reinterpret_cast<float*>(&colors_list[j]);
-                    cloud_cluster->push_back(temp);
+                    pcl::PointXYZRGB point = (*sp_pcl_passthroughz_cloud)[idx];
+                    point.rgb = *reinterpret_cast<float*>(&colors_list[j]);
+                    x_sum+=point.x, y_sum+=point.y, z_sum+=point.z;
+                    cloud_cluster->push_back(point);
                     //cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
-                    // ++k;
+                    //++k;
                 }
-
-                cloud_cluster->width = cloud_cluster->size();
+                int cluster_size = cloud_cluster->size();
+                cloud_cluster->width = cluster_size;
                 cloud_cluster->height = 1;
                 cloud_cluster->is_dense = true;
 
-                ROS_INFO_STREAM("Total data points in cluster " << (j+1) << " is " << cloud_cluster->size());
+                ROS_INFO_STREAM("Total data points in cluster " << (j+1) << " is " << cluster_size);
+                ROS_INFO_STREAM("Centroid of cluster_"<<(j+1)<<" lies at (X:"<<x_sum/cluster_size<<" Y:"<<y_sum/cluster_size<<" Z:"<<z_sum/cluster_size<<").");
+
                 // ROS_INFO_STREAM("value of k: " << k);
                 *cloud_clusters += *cloud_cluster;
                 //pcl::PCLPointCloud2::concatenate(*cloud_clusters, *cloud_cluster);
@@ -259,9 +261,7 @@ class Preprocess
             //cloud_clusters->is_dense = true;
             (cloud_clusters->header).frame_id = "camera_rgb_optical_frame";
 
-
-            ROS_INFO("Total $$$#################################$$$$ of clusters : %d", j);
-            
+            ROS_INFO("Total number of clusters : %d", j);
 
             sensor_msgs::PointCloud2 pcl_downsampled;
             pcl::toROSMsg(*downsampled, pcl_downsampled);
