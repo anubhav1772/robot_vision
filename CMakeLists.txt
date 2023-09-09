@@ -31,9 +31,10 @@ find_package(Boost REQUIRED)
 ################################################
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#	 FILES
-# )
+add_message_files(
+  FILES
+  SegmentedClusterCentroids.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -61,8 +62,8 @@ generate_messages(
 
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ur5_robot
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES robot_vision
+   CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 

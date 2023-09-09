@@ -27,6 +27,9 @@
 #include <random>
 #include <vector>
 
+#include "geometry_msgs/Point.h"
+#include "robot_vision/SegmentedClusterCentroids.h"
+
 // color intensities [0, 255]
 const int inten[] = {0, 42, 99, 128, 192, 255};
 
@@ -48,6 +51,7 @@ class Preprocess
             pcl_cloud_table_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_table", 1);
             pcl_cloud_objects_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_objects", 1);
             pcl_clusters_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_clusters", 1);
+            cloud_cluster_centroids_pub = nh_.advertise<robot_vision::SegmentedClusterCentroids>("/cluster_centroids", 1);
         }
 
         void generate_random_colors(int num_of_clusters)
@@ -79,9 +83,11 @@ class Preprocess
         ros::Publisher pcl_cloud_table_pub;
         ros::Publisher pcl_cloud_objects_pub;
         ros::Publisher pcl_clusters_pub;
+
+        ros::Publisher cloud_cluster_centroids_pub;
         std::random_device dev;
 
-        //std::vector<> objects_centroid_list;
+        robot_vision::SegmentedClusterCentroids centroids_msg;
 
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
         {
@@ -218,6 +224,8 @@ class Preprocess
             // Don't call generate_random_colors() again.
             // if not equal, then call the function to create random colors.
             int num_of_clusters = cluster_indices.size();
+            //centroid_list = new robot_vision::SegmentedClusterCentroids[num_of_clusters];
+            
             if(colors_list.size() != num_of_clusters)
             {
                 generate_random_colors(num_of_clusters);
@@ -238,11 +246,19 @@ class Preprocess
                     //cloud_cluster->push_back((*sp_pcl_passthroughz_cloud)[idx]);
                     //++k;
                 }
+                
                 int cluster_size = cloud_cluster->size();
                 cloud_cluster->width = cluster_size;
                 cloud_cluster->height = 1;
                 cloud_cluster->is_dense = true;
 
+                geometry_msgs::Point centroid;
+                centroid.x = x_sum/cluster_size;
+                centroid.y = y_sum/cluster_size;
+                centroid.z = z_sum/cluster_size;
+
+                centroids_msg.cluster_centroids.push_back(centroid);
+                
                 ROS_INFO_STREAM("Total data points in cluster " << (j+1) << " is " << cluster_size);
                 ROS_INFO_STREAM("Centroid of cluster_"<<(j+1)<<" lies at (X:"<<x_sum/cluster_size<<" Y:"<<y_sum/cluster_size<<" Z:"<<z_sum/cluster_size<<").");
 
@@ -262,6 +278,8 @@ class Preprocess
             (cloud_clusters->header).frame_id = "camera_rgb_optical_frame";
 
             ROS_INFO("Total number of clusters : %d", j);
+
+            cloud_cluster_centroids_pub.publish(centroids_msg);
 
             sensor_msgs::PointCloud2 pcl_downsampled;
             pcl::toROSMsg(*downsampled, pcl_downsampled);
