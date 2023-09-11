@@ -51,7 +51,8 @@ class Preprocess
             pcl_cloud_table_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_table", 1);
             pcl_cloud_objects_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_objects", 1);
             pcl_clusters_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_clusters", 1);
-            cloud_cluster_centroids_pub = nh_.advertise<robot_vision::SegmentedClusterCentroids>("/cluster_centroids", 1);
+            //cloud_cluster_centroids_pub = nh_.advertise<robot_vision::SegmentedClusterCentroids>("/cluster_centroids", 1);
+            pcl_centroids_pub = nh_.advertise<sensor_msgs::PointCloud2>("/pcl_centroids", 1);
         }
 
         void generate_random_colors(int num_of_clusters)
@@ -83,11 +84,12 @@ class Preprocess
         ros::Publisher pcl_cloud_table_pub;
         ros::Publisher pcl_cloud_objects_pub;
         ros::Publisher pcl_clusters_pub;
+        ros::Publisher pcl_clusters_centroid_pub;
+        ros::Publisher pcl_centroids_pub;
 
-        ros::Publisher cloud_cluster_centroids_pub;
+        //ros::Publisher cloud_cluster_centroids_pub;
+        //robot_vision::SegmentedClusterCentroids centroids_msg;
         std::random_device dev;
-
-        robot_vision::SegmentedClusterCentroids centroids_msg;
 
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
         {
@@ -232,6 +234,8 @@ class Preprocess
             }
 
             int j=0;
+            pcl::PointXYZRGB centroid_point;
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_clusters_centroid(new pcl::PointCloud<pcl::PointXYZRGB>);
             for(const auto& cluster : cluster_indices)
             {
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -252,12 +256,19 @@ class Preprocess
                 cloud_cluster->height = 1;
                 cloud_cluster->is_dense = true;
 
-                geometry_msgs::Point centroid;
-                centroid.x = x_sum/cluster_size;
-                centroid.y = y_sum/cluster_size;
-                centroid.z = z_sum/cluster_size;
+                //geometry_msgs::Point centroid;
+                //centroid.x = x_sum/cluster_size;
+                //centroid.y = y_sum/cluster_size;
+                //centroid.z = z_sum/cluster_size;
 
-                centroids_msg.cluster_centroids.push_back(centroid);
+                //centroids_msg.cluster_centroids.push_back(centroid);
+
+                centroid_point.x = x_sum/cluster_size;
+                centroid_point.y = y_sum/cluster_size;
+                centroid_point.z = z_sum/cluster_size;
+                centroid_point.rgb = *reinterpret_cast<float*>(&colors_list[j]);
+
+                cloud_clusters_centroid->push_back(centroid_point);
                 
                 ROS_INFO_STREAM("Total data points in cluster " << (j+1) << " is " << cluster_size);
                 ROS_INFO_STREAM("Centroid of cluster_"<<(j+1)<<" lies at (X:"<<x_sum/cluster_size<<" Y:"<<y_sum/cluster_size<<" Z:"<<z_sum/cluster_size<<").");
@@ -276,10 +287,13 @@ class Preprocess
             //cloud_clusters->row_step = cloud_clusters->point_step*cloud_clusters->width*cloud_clusters->height;
             //cloud_clusters->is_dense = true;
             (cloud_clusters->header).frame_id = "camera_rgb_optical_frame";
+            
+            cloud_clusters_centroid->is_dense = true;
+            (cloud_clusters_centroid->header).frame_id = "camera_rgb_optical_frame";
 
             ROS_INFO("Total number of clusters : %d", j);
 
-            cloud_cluster_centroids_pub.publish(centroids_msg);
+            //cloud_cluster_centroids_pub.publish(centroids_msg);
 
             sensor_msgs::PointCloud2 pcl_downsampled;
             pcl::toROSMsg(*downsampled, pcl_downsampled);
@@ -316,6 +330,10 @@ class Preprocess
             sensor_msgs::PointCloud2 pcl_cloud_clusters;
             pcl::toROSMsg(*cloud_clusters, pcl_cloud_clusters);
             pcl_clusters_pub.publish(pcl_cloud_clusters);
+
+            sensor_msgs::PointCloud2 pcl_centroids;
+            pcl::toROSMsg(*cloud_clusters_centroid, pcl_centroids);
+            pcl_centroids_pub.publish(pcl_centroids);
         
         }
 };  // Preprocess
