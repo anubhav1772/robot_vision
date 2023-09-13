@@ -123,7 +123,7 @@ class Preprocess
             ROS_INFO("---------------------------------");
             ROS_INFO("Point Cloud Cluster Stats:");
             ROS_INFO("Height: %d", sp_pcl_cloud->height);
-            ROS_INFO("Weight: %d", sp_pcl_cloud->width);
+            ROS_INFO("Width: %d", sp_pcl_cloud->width);
             ROS_INFO("Total data points : %d", sp_pcl_cloud->height*sp_pcl_cloud->width);
             // ROS_INFO("",*p_cloud);
             ROS_INFO("---------------------------------");
