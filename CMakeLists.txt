@@ -10,15 +10,22 @@ add_compile_options(-std=c++14)
 find_package(catkin REQUIRED COMPONENTS
   message_generation
   pcl_conversions
+  interactive_markers
+  shape_msgs
 	pcl_ros
   roscpp
   rospy
   sensor_msgs
   tf2_ros
-  tf2_sensor_msgs
+  tf2_geometry_msgs
+  trajectory_msgs
+  tf2_eigen
+  visualization_msgs
+  rviz_visual_tools
 )
 
 find_package(Boost REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -54,6 +61,8 @@ generate_messages(
   geometry_msgs
   std_msgs
   sensor_msgs
+  visualization_msgs
+  trajectory_msgs
  )
 
 ###################################
@@ -80,17 +89,20 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(downsampling src/downsampling.cpp)
+add_executable(axes_rviz_markers src/axes_visual_tools.cpp)
 add_executable(point_cloud_preprocessing src/preprocessing.cpp)
 add_executable(point_cloud_tf src/cloud_transformer.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(downsampling ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(axes_rviz_markers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(point_cloud_preprocessing ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(point_cloud_tf ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(downsampling ${catkin_LIBRARIES})
+target_link_libraries(axes_rviz_markers ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(point_cloud_preprocessing ${catkin_LIBRARIES})
 target_link_libraries(point_cloud_tf ${catkin_LIBRARIES})
 
