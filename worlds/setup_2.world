@@ -52,7 +52,7 @@
       <uri>model://cracker</uri>
       <static>true</static>
       <name>cracker_1</name>
-      <pose>0.794093 -0.11269 1.242096 -0.055011 -0.012796 1.342494</pose>
+      <pose>0.794093 -0.11269 1.226766 -0.055011 -0.012796 1.342494</pose>
     </include>
 
     <!-- cracker -->
@@ -71,6 +71,14 @@
       <pose>0.812623 0.251395 1.23184 -0.028299 0.028793 -0.730383</pose>
     </include>
 
+    <!-- beer -->
+    <include>
+      <uri>model://beer</uri>
+      <static>true</static>
+      <name>beer</name>
+      <pose>0.524292 -0.390634 1.226766 0.0 0.0 0.246588</pose>
+    </include>
+
     <!-- Tomato Sauce Can -->
     <include>
       <uri>model://tomato_sauce</uri>
@@ -83,6 +91,20 @@
       <uri>model://mustard</uri>
       <static>true</static>
       <pose>0.664781 0.340374 1.39052 0.064318 0.014760 1.518023</pose>
+    </include>
+
+    <!-- Coke Can -->
+    <include>
+      <uri>model://coke_can</uri>
+      <static>true</static>
+      <pose>1.008121 -0.052158 1.220196 0.0 -0.0 -1.56</pose>
+    </include>
+
+    <!-- Soda Can -->
+    <include>
+      <uri>model://soda_can</uri>
+      <static>true</static>
+      <pose>0.752655 -0.494472 1.226766 0.0 0.0 0.246588</pose>
     </include>
 
     <model name='table'>
@@ -242,7 +264,7 @@
     <!-- biscuits -->
     <model name='biscuits'>
       <static>true</static>
-      <pose frame=''>0.659679 0.34268 1.220194 0.000001 -0.000004 -1.560427</pose>
+      <pose frame=''>0.661921 0.126464 1.220195 0.000001 -0.000004 -1.560427</pose>
       <link name='biscuits_link'>
         <inertial>
           <pose frame=''>0 0 0 0 -0 0</pose>
