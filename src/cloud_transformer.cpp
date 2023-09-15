@@ -18,11 +18,11 @@ public:
     : nh_(nh) 
   {
     // pcl_sub_ = nh_.subscribe("/front_camera/depth_registered/points", 1, &CloudTransformer::pclCallback, this);
-    pcl_sub_ = nh_.subscribe("/front/pcl_downsampled", 1, &CloudTransformer::pclCallback, this);
-    pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/front_transformed_point_cloud", 1);
+    pcl_sub_ = nh_.subscribe("/pcl_centroids", 1, &CloudTransformer::pclCallback, this);
+    pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/transformed_centroids", 1);
 
     buffer_.reset(new sensor_msgs::PointCloud2);
-    buffer_->header.frame_id = "/front_camera_rgb_optical_frame";
+    buffer_->header.frame_id = "/camera_rgb_optical_frame";
   }
 
 private:
