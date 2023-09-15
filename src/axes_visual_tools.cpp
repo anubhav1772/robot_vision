@@ -5,14 +5,19 @@
 #include <pcl_ros/point_cloud.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 class RvizMarker
 {
     public:
         explicit RvizMarker(ros::NodeHandle nh)
             : nh_(nh)
         {
-            pcl_sub = nh_.subscribe("/pcl_centroids", 1, &RvizMarker::pclCallback, this);
-            visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("camera_rgb_optical_frame", "/rviz_visual_markers"));
+            pcl_sub = nh_.subscribe("/transformed_centroids", 1, &RvizMarker::pclCallback, this);
+            //visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("camera_rgb_optical_frame", "/rviz_visual_markers"));
+            visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("world", "/rviz_visual_markers"));
         }
     
     private:
@@ -47,7 +52,8 @@ class RvizMarker
                 //pose.translation().y() = point.y;
                 //pose.translation().z() = point.z;
                 pose.translation() = Eigen::Vector3d(point.x, point.y, point.z);
-                visual_tools_->publishAxisLabeled(pose, "centroid");
+                //pose = pose * Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+                visual_tools_->publishAxisLabeled(pose, "object"+std::to_string(i+1));
                 i++;
             }
             visual_tools_->trigger();
