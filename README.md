@@ -2,7 +2,7 @@
 Object Segmentation and Clustering in 3D Point Cloud using PCL
 (ROS + Gazebo + RViz + PCL)
 
-### Installation
+### Setup:
 ---
 
 Clone the repository using:
@@ -28,11 +28,14 @@ Start the simulation using:
   </tr>
  </table>
 
-### Dependencies
+### Requirements
 ---
+* [pcl v1.13.1](https://github.com/PointCloudLibrary/pcl/releases) - [Installation](https://pcl.readthedocs.io/projects/tutorials/en/latest/compiling_pcl_posix.html)
+* ROS Noetic (Ubuntu 20.04)
+* Gazebo v11.11.0
 
-pcl-1.13.1
 
-ROS - Noetic
 
-Gazebo version 11.11.0
+
+
+
