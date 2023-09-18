@@ -52,7 +52,6 @@ class RvizMarker
                 //pose.translation().y() = point.y;
                 //pose.translation().z() = point.z;
                 pose.translation() = Eigen::Vector3d(point.x, point.y, point.z);
-                //pose = pose * Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
                 visual_tools_->publishAxisLabeled(pose, "object"+std::to_string(i+1));
                 i++;
             }
