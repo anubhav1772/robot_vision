@@ -24,6 +24,10 @@ Start the simulation using:
     <td><img src="https://drive.google.com/uc?export=view&id=13rdrFMm3Oydf0mmfpXHnc65KUgBe1FLu" width=350 height=150></td>
   </tr>
  </table>
+ 
+#### Make sure to run point_cloud_tf node (cloud_transformer.cpp)
+* To transform point cloud data from `/camera_rgb_optical_frame` to `/world` frame
+* Required for placing the axis markers at all detected clusters' centroids in the `/world` frame, otherwise it would be in `/camera_rgb_optical_frame` frame.
 
 ### Requirements
 * [pcl v1.13.1](https://github.com/PointCloudLibrary/pcl/releases) - [Installation](https://pcl.readthedocs.io/projects/tutorials/en/latest/compiling_pcl_posix.html)
