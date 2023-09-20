@@ -8,7 +8,7 @@
 #include <tf/transform_listener.h>
 
 /*
-* This node transforms point cloud data from /front_camera_rgb_optical_frame frame to /world frame
+* This node transforms point cloud data from /camera_rgb_optical_frame frame to /world frame
 */
 
 class CloudTransformer
@@ -17,7 +17,6 @@ public:
   explicit CloudTransformer(ros::NodeHandle nh)
     : nh_(nh) 
   {
-    // pcl_sub_ = nh_.subscribe("/front_camera/depth_registered/points", 1, &CloudTransformer::pclCallback, this);
     pcl_sub_ = nh_.subscribe("/pcl_centroids", 1, &CloudTransformer::pclCallback, this);
     pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/transformed_centroids", 1);
 
