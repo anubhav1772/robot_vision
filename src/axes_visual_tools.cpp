@@ -9,6 +9,10 @@
     #define M_PI 3.14159265358979323846
 #endif
 
+/*
+* This node publishes labeled axis markers at all the detected clusters' centroids.
+*/
+
 class RvizMarker
 {
     public:
