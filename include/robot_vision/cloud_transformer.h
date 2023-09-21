@@ -10,10 +10,6 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_listener.h>
 
-/*
-* This node transforms point cloud data from /camera_rgb_optical_frame frame to /world frame
-*/
-
 class CloudTransformer
 {
 public:
