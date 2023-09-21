@@ -1,67 +1,52 @@
-#include <ros/ros.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_ros/transforms.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <tf/transform_listener.h>
+#include "robot_vision/cloud_transformer.h"
 
 /*
 * This node transforms point cloud data from /camera_rgb_optical_frame frame to /world frame
 */
 
-class CloudTransformer
+CloudTransformer::CloudTransformer(ros::NodeHandle nh)
+  : nh_(nh) 
 {
-public:
-  explicit CloudTransformer(ros::NodeHandle nh)
-    : nh_(nh) 
+  // pcl_sub_ = nh_.subscribe("/front_camera/depth_registered/points", 1, &CloudTransformer::pclCallback, this);
+  pcl_sub_ = nh_.subscribe("/pcl_centroids", 1, &CloudTransformer::pclCallback, this);
+  pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/transformed_centroids", 1);
+
+  buffer_.reset(new sensor_msgs::PointCloud2);
+  buffer_->header.frame_id = "/camera_rgb_optical_frame";
+}
+
+CloudTransformer::~CloudTransformer(){}
+
+void CloudTransformer::pclCallback(const sensor_msgs::PointCloud2ConstPtr& pcl_msg)
+{
+  try
   {
-    pcl_sub_ = nh_.subscribe("/pcl_centroids", 1, &CloudTransformer::pclCallback, this);
-    pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/transformed_centroids", 1);
+    ros::Time now = ros::Time::now();
+    ros::Time past = now - ros::Duration(1.0);
 
-    buffer_.reset(new sensor_msgs::PointCloud2);
-    buffer_->header.frame_id = "/camera_rgb_optical_frame";
-  }
-
-private:
-  ros::NodeHandle nh_;
-  ros::Subscriber pcl_sub_;
-  ros::Publisher pcl_pub_;
-  tf::TransformListener listener_;
-  sensor_msgs::PointCloud2::Ptr buffer_;
-  tf::StampedTransform transform;
-
-  void pclCallback(const sensor_msgs::PointCloud2ConstPtr& pcl_msg)
-  {
-    try
+    bool transformPossible = listener_.waitForTransform("/world", 
+                                                        (*pcl_msg).header.frame_id, 
+                                                        (*pcl_msg).header.stamp, 
+                                                        ros::Duration(1.0));
+    if (transformPossible == false)
     {
-      ros::Time now = ros::Time::now();
-      ros::Time past = now - ros::Duration(1.0);
-
-      bool transformPossible = listener_.waitForTransform("/world", 
-                                                          (*pcl_msg).header.frame_id, 
-                                                          (*pcl_msg).header.stamp, 
-                                                          ros::Duration(1.0));
-      if (transformPossible == false)
-      {
-        ROS_INFO("Transform not possible");
-      }   
-      else{
-        ROS_INFO("Transform possible");
-      }
-
-      listener_.lookupTransform("/world", (*pcl_msg).header.frame_id, past, transform);
+      ROS_INFO("Transform not possible");
+    }   
+    else
+    {
+      ROS_INFO("Transform possible");
     }
-    catch(tf::TransformException &ex)
-    {
-      ROS_WARN("%s",ex.what());
-    };
 
-    pcl_ros::transformPointCloud("/world", *pcl_msg, *buffer_, listener_);
-    pcl_pub_.publish(buffer_);
+    listener_.lookupTransform("/world", (*pcl_msg).header.frame_id, past, transform);
   }
-};  // end of class CloudTransformer
+  catch(tf::TransformException &ex)
+  {
+    ROS_WARN("%s",ex.what());
+  };
+
+  pcl_ros::transformPointCloud("/world", *pcl_msg, *buffer_, listener_);
+  pcl_pub_.publish(buffer_);
+}
 
 int main(int argc, char **argv)
 {
