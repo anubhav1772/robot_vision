@@ -16,6 +16,7 @@ class RvizMarker
 {
     public:
         explicit RvizMarker(ros::NodeHandle nh);
+        ~RvizMarker();
     
     private:
         ros::NodeHandle nh_;
@@ -25,4 +26,4 @@ class RvizMarker
         void pclCallback(const sensor_msgs::PointCloud2& cloud_msg);
 };
 
-#endif
+#endif /* RVIZ_VISUAL_TOOLS_H */

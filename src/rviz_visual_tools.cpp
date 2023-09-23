@@ -11,6 +11,8 @@ RvizMarker::RvizMarker(ros::NodeHandle nh)
     //visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("camera_rgb_optical_frame", "/rviz_visual_markers"));
     visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("world", "/rviz_visual_markers"));
 }
+
+RvizMarker::~RvizMarker(){}
     
 void RvizMarker::pclCallback(const sensor_msgs::PointCloud2& cloud_msg)
 {
