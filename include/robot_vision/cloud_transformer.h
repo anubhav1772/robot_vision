@@ -25,7 +25,6 @@ private:
   tf::StampedTransform transform;
 
   void pclCallback(const sensor_msgs::PointCloud2ConstPtr& pcl_msg);
-
 };
 
-#endif
+#endif /* CLOUD_TRANSFORMER_H */
