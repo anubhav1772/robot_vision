@@ -89,7 +89,7 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(downsampling src/downsampling.cpp)
-add_executable(axes_rviz_markers src/axes_visual_tools.cpp)
+add_executable(axes_rviz_markers src/rviz_visual_tools.cpp)
 add_executable(point_cloud_preprocessing src/preprocessing.cpp)
 add_executable(point_cloud_tf src/cloud_transformer.cpp)
 
